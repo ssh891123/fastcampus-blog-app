@@ -188,6 +188,10 @@ footer a {
   padding: 20px 0px;
 }
 
+.post__detail .post__text {
+  white-space: pre-wrap;
+}
+
 /* profile */
 .profile__box {
   display: flex;

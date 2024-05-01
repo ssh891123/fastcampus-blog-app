@@ -9,8 +9,8 @@ interface PostListProp {
 
 type TabType = "all" | "my";
 
-interface PostProp {
-    id: string;
+export interface PostProp {
+    id?: string;
     title: string;
     email: string;
     summary: string;
@@ -35,7 +35,7 @@ export default function PostList({ hasNavigation = true }: PostListProp) {
     useEffect(() => {
         getPosts();
     }, []);
-
+    console.log(posts);
     return (
         <>
             {hasNavigation && (
@@ -61,14 +61,14 @@ export default function PostList({ hasNavigation = true }: PostListProp) {
                 {posts.length > 0
                     ? posts.map((post, index) => (
                         <div key={post?.id} className="post__box">
-                            <Link to={`/posts/${index}`}>
+                            <Link to={`/posts/${post?.id}`}>
                                 <div className="post__profile-box">
                                     <div className="post__profile" />
                                     <div className="post__author-name">{post.email}</div>
                                     <div className="post__date">{post.createAt}</div>
                                 </div>
                                 <div className="post__title">{post.title}</div>
-                                <div className="post__text">{post.content}</div>
+                                <div className="post__text">{post.summary}</div>
                             </Link>
                             {user?.email === post?.email && (
                                 <div className="post__utils-box">
