@@ -159,6 +159,14 @@ footer a {
   color: black;
 }
 
+.post__no-post {
+  padding: 24px;
+  text-align: center;
+  color: gray;
+  border: 1px solid #f2f2f2;
+  border-radius: 20px;
+}
+
 /* post detail */
 .post__detail .post__title {
   font-size: 36px;
@@ -178,6 +186,10 @@ footer a {
 
 .post__detail .post__text {
   padding: 20px 0px;
+}
+
+.post__detail .post__text {
+  white-space: pre-wrap;
 }
 
 /* profile */
