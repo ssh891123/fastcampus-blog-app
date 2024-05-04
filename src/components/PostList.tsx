@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { collection, deleteDoc, doc, getDocs } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, orderBy, query } from "firebase/firestore";
 import { db } from "firebaseApp";
 import AuthContext from "context/AuthContext";
 import { toast } from "react-toastify";
@@ -16,8 +16,8 @@ export interface PostProp {
     email: string;
     summary: string;
     content: string;
-    createAt: string;
-    updateAd: string;
+    createdAt: string;
+    updatedAd: string;
     uid: string;
 }
 
@@ -36,9 +36,12 @@ export default function PostList({ hasNavigation = true }: PostListProp) {
     }
 
     const getPosts = async () => {
-        const querySnapshot = await getDocs(collection(db, "posts"));
+        // posts 초기화
         setPosts([]);
-        querySnapshot.forEach((doc) => {
+        const postsRef = collection(db, "posts");
+        const postsQuery = query(postsRef, orderBy("createdAt", "asc"));
+        const datas = await getDocs(postsQuery);
+        datas.forEach((doc) => {
             // console.log(doc.data());
             const dataObj = { ...doc.data(), id: doc.id };
             setPosts((prev) => [...prev, dataObj as PostProp]);
@@ -79,7 +82,7 @@ export default function PostList({ hasNavigation = true }: PostListProp) {
                                 <div className="post__profile-box">
                                     <div className="post__profile" />
                                     <div className="post__author-name">{post.email}</div>
-                                    <div className="post__date">{post.createAt}</div>
+                                    <div className="post__date">{post.createdAt}</div>
                                 </div>
                                 <div className="post__title">{post.title}</div>
                                 <div className="post__text">{post.summary}</div>
