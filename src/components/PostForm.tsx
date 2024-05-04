@@ -1,33 +1,51 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { db } from "firebaseApp";
-import { collection, addDoc } from "firebase/firestore"; 
+import { collection, addDoc, doc, getDoc, updateDoc } from "firebase/firestore";
 import AuthContext from "context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { PostProp } from "./PostList";
 
 export default function PostForm() {
+    const params = useParams();
+    const [post, setPost] = useState<PostProp | null>(null);
     const [title, setTitle] = useState<string>("");
     const [summary, setSummary] = useState<string>("");
     const [content, setContent] = useState<string>("");
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
 
-    const onSubmit = async (e: React.FormEvent<HTMLFormElement>)=> {
+    const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         try {
-            //firebase로 데이터 생성
-            await addDoc(collection(db, "posts"), {
-                title: title,
-                summary: summary,
-                content: content,
-                createAt: new Date()?.toLocaleDateString(),
-                email: user?.email,
-            });
-
-            toast?.success("게시글 생성했습니다.");
-            navigate("/");
-        } catch(e: any) {
+            if (post && post.id) {
+                // 만약 post 데이터가 있다면, firestore로 데이터 수정
+                const postRef = doc(db, "posts", post?.id);
+                // Set the "capital" field of the city 'DC'
+                await updateDoc(postRef, {
+                    title: title,
+                    summary: summary,
+                    content: content,
+                    updateAt: new Date()?.toLocaleDateString(),
+                });
+                toast?.success("게시글 수정했습니다.");
+                navigate(`/posts/${post?.id}`);
+            } else {
+                // 만약 post 데이턱 없다면, firebase로 데이터 생성
+                await addDoc(collection(db, "posts"), {
+                    title: title,
+                    summary: summary,
+                    content: content,
+                    createAt: new Date()?.toLocaleDateString(),
+                    email: user?.email,
+                    uid: user?.uid,
+                });
+                toast?.success("게시글 생성했습니다.");
+                navigate("/");
+            }
+            
+        } catch (e: any) {
             console.log(e);
             toast?.error(e.code);
         }
@@ -36,10 +54,10 @@ export default function PostForm() {
     const onChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
     ) => {
-        const { 
+        const {
             target: { name, value },
         } = e;
-        
+
         if (name === 'title') {
             setTitle(value);
         }
@@ -52,6 +70,27 @@ export default function PostForm() {
             setContent(value);
         }
     }
+
+    const getPost = async (id: string) => {
+        if (id) {
+            const docRef = doc(db, "posts", id);
+            const docSnap = await getDoc(docRef);
+
+            setPost({ id: docSnap.id, ...(docSnap.data() as PostProp) });
+        }
+    };
+
+    useEffect(() => {
+        if (params?.id) getPost(params?.id);
+    }, [params?.id]);
+
+    useEffect(() => {
+        if (post) {
+            setTitle(post.title);
+            setSummary(post.summary);
+            setContent(post.content);
+        }
+    }, [post]);
 
     return (
         <form onSubmit={onSubmit} className="form">
@@ -68,7 +107,7 @@ export default function PostForm() {
                 <textarea name="content" id="content" required onChange={onChange} value={content} />
             </div>
             <div className="form__block">
-                <input type="submit" value="제출" className="form__btn--submit" />
+                <input type="submit" value={post ? "수정" : "제출"} className="form__btn--submit" />
             </div>
         </form>
     )
