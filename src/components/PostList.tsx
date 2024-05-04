@@ -1,8 +1,9 @@
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs } from "firebase/firestore";
 import { db } from "firebaseApp";
 import AuthContext from "context/AuthContext";
+import { toast } from "react-toastify";
 interface PostListProp {
     hasNavigation?: boolean;
 }
@@ -25,8 +26,18 @@ export default function PostList({ hasNavigation = true }: PostListProp) {
     const [posts, setPosts] = useState<PostProp[]>([]);
     const { user } = useContext(AuthContext);
 
+    const handleDelete = async (id?: string) => {
+        const confirm = window.confirm("해당 게시글을 삭제하시겠습니까?");
+        if(confirm && id) {
+            await deleteDoc(doc(db, "posts", id));
+            toast?.success("게시글을 삭제했습니다.");
+            getPosts(); //변경된 post 리스트를 다시 가져옴
+        }
+    }
+
     const getPosts = async () => {
         const querySnapshot = await getDocs(collection(db, "posts"));
+        setPosts([]);
         querySnapshot.forEach((doc) => {
             // console.log(doc.data());
             const dataObj = { ...doc.data(), id: doc.id };
@@ -38,6 +49,7 @@ export default function PostList({ hasNavigation = true }: PostListProp) {
         getPosts();
     }, []);
     console.log(posts);
+
     return (
         <>
             {hasNavigation && (
@@ -74,7 +86,11 @@ export default function PostList({ hasNavigation = true }: PostListProp) {
                             </Link>
                             {user?.email === post?.email && (
                                 <div className="post__utils-box">
-                                    <div className="post__delete">삭제</div>
+                                    <div 
+                                        className="post__delete" 
+                                        role="presentation" 
+                                        onClick={() => { handleDelete(post?.id) } }
+                                    >삭제</div>
                                     <Link to={`/posts/edit/${post?.id}`} className="post__edit">수정</Link>
                                 </div>
                             )}
