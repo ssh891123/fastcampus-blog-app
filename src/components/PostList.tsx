@@ -6,10 +6,8 @@ import AuthContext from "context/AuthContext";
 import { toast } from "react-toastify";
 interface PostListProp {
     hasNavigation?: boolean;
-    defaultTab?: TabType;
+    defaultTab?: TabType | CategoryType;
 }
-
-type TabType = "all" | "my";
 
 export interface PostProp {
     id?: string;
@@ -20,19 +18,29 @@ export interface PostProp {
     createdAt: string;
     updatedAd: string;
     uid: string;
+    category?: CategoryType;
 }
 
-export default function PostList({ 
-    hasNavigation = true ,
+type TabType = "all" | "my";
+export type CategoryType = "Frontend" | "Backend" | "Web" | "Native";
+export const CATEGORIES: CategoryType[] = [
+    "Frontend",
+    "Backend",
+    "Web",
+    "Native",
+];
+
+export default function PostList({
+    hasNavigation = true,
     defaultTab = "all",
 }: PostListProp) {
-    const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
+    const [activeTab, setActiveTab] = useState<TabType | CategoryType>(defaultTab);
     const [posts, setPosts] = useState<PostProp[]>([]);
     const { user } = useContext(AuthContext);
 
     const handleDelete = async (id?: string) => {
         const confirm = window.confirm("해당 게시글을 삭제하시겠습니까?");
-        if(confirm && id) {
+        if (confirm && id) {
             await deleteDoc(doc(db, "posts", id));
             toast?.success("게시글을 삭제했습니다.");
             getPosts(); //변경된 post 리스트를 다시 가져옴
@@ -45,15 +53,21 @@ export default function PostList({
         const postsRef = collection(db, "posts");
         let postsQuery;
 
-        if(activeTab === 'my' && user) {
+        if (activeTab === 'my' && user) {
             // 나의 글만 필터링
-            postsQuery = query(postsRef, 
+            postsQuery = query(postsRef,
                 where('uid', '==', user?.uid),
                 orderBy("createdAt", "asc")
             );
-        } else {
+        } else if (activeTab === 'all') {
             // 모든 글 보여주기
             postsQuery = query(postsRef, orderBy("createdAt", "asc"));
+        } else {
+            // 카테고리 글 보여주기
+            postsQuery = query(postsRef,
+                where('category', '==', activeTab),
+                orderBy("createdAt", "asc")
+            );
         }
         const datas = await getDocs(postsQuery);
         datas.forEach((doc) => {
@@ -66,7 +80,6 @@ export default function PostList({
     useEffect(() => {
         getPosts();
     }, [activeTab]);
-    console.log(posts);
 
     return (
         <>
@@ -86,6 +99,16 @@ export default function PostList({
                     >
                         나의 글
                     </div>
+                    {CATEGORIES.map((category) => (
+                        <div
+                            key={category}
+                            role="presentation"
+                            onClick={() => setActiveTab(category)}
+                            className={activeTab === category ? "post__navigation--active" : ""}
+                        >
+                            {category}
+                        </div>
+                    ))}
                 </div >
             )
             }
@@ -104,9 +127,9 @@ export default function PostList({
                             </Link>
                             {user?.email === post?.email && (
                                 <div className="post__utils-box">
-                                    <div 
-                                        className="post__delete" 
-                                        role="presentation" 
+                                    <div
+                                        className="post__delete"
+                                        role="presentation"
                                         onClick={() => { handleDelete(post?.id) } }
                                     >삭제</div>
                                     <Link to={`/posts/edit/${post?.id}`} className="post__edit">수정</Link>
